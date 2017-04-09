@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from tethys_sdk.gizmos import TableView, LinePlot
+from tethys_sdk.gizmos import TableView, LinePlot, Button, SelectInput, TextInput
+
+from math import pi, log10
 
 from .model import SessionMaker, FlowDurationData
 import json, sys, cgi
@@ -11,7 +13,105 @@ def home(request):
     """
     Controller for the app home page.
     """
-    context = {}
+    session=SessionMaker()
+
+    pipeRoughness={'Riveted Steel': 0.0009, 'Concrete': 0.0003, 'Wood Stave': 0.00018,
+        'Cast Iron': 0.00026, 'Galvanized Iron': 0.00015, 'Commercial Steel': 0.000045,
+        'Drawn Turbing': 0.0000015, 'Plastic': 0, 'Glass': 0}
+
+    materialSelectInput = []
+    for v, k in pipeRoughness.iteritems():
+        materialSelectInput.append((v, float(k)))
+
+    materialDropdown = SelectInput(display_text='Select Pipe Material',
+                                   name='materialDropdown',
+                                   multiple=False,
+                                   options=materialSelectInput,
+                                   initial=['Commercial Steel'],
+                                   original=False)
+
+    text_input = TextInput(display_text='Enter Water Temperature',
+                           name='inputAmount',
+                           placeholder='20.00',
+                           append=unicode(u'\u00b0' + 'C'))
+
+    input_tbv = TableView(column_names=('Input', 'Value', 'Units'),
+                          rows=[('Length', 739, '[ M ]'),
+                                ('Diameter', 1.5, '[ M ]'),
+                                ('Elevation Head', 135, '[ M ]')],
+                          hover=True,
+                          striped=True,
+                          bordered=True,
+                          condensed=True,
+                          editable_columns=(False, 'valueInput'),
+                          row_ids=[0, 1, 2])
+
+    bends_tbv = TableView(column_names=('Bends', 'Count'),
+                          rows=[('90 Smooth (Flanged)', 0),
+                                ('90 Smooth (Threaded)', 0),
+                                ('90 Miter', 0),
+                                ('45 Threaded Elbow', 1),
+                                ('Threaded Union', 121)],
+                          hover=True,
+                          striped=True,
+                          bordered=True,
+                          condensed=True,
+                          editable_columns=(False, 'BCountInput'),
+                          row_ids=[0, 1, 2, 3, 4])
+
+    inlets_tbv = TableView(column_names=('Inlets', 'Count'),
+                          rows=[('Reentrant', 0),
+                                ('Sharp Edge', 1),
+                                ('Well-Rounded', 0),
+                                ('Slightly-Rounded', 0)],
+                          hover=True,
+                          striped=True,
+                          bordered=True,
+                          condensed=True,
+                          editable_columns=(False, 'ICountInput'),
+                          row_ids=[0, 1, 2, 3])
+
+    exits_tbv = TableView(column_names=('Exit', 'Count'),
+                          rows=[('Reentrant (Turb)', 0),
+                                ('Sharp Edge (Turb)', 1),
+                                ('Rounded (Turb)', 0)],
+                          hover=True,
+                          striped=True,
+                          bordered=True,
+                          condensed=True,
+                          editable_columns=(False, 'ECountInput'),
+                          row_ids=[0, 1, 2])
+
+    gradContraction_tbv = TableView(column_names=('Contraction', 'Count'),
+                                    rows=[('30 Degree', 0),
+                                          ('45 Degree', 0),
+                                          ('60 Degree', 0)],
+                                    hover=True,
+                                    striped=True,
+                                    bordered=True,
+                                    condensed=True,
+                                    editable_columns=(False, 'GCountInput'),
+                                    row_ids=[0, 1, 2])
+
+    submit_button = Button(
+                    display_text='Calculate Capacity',
+                    name='submit',
+                    attributes='form=parameters-form',
+                    submit=True
+    )
+
+    session.close()
+
+    context = {
+        'materialDropdown': materialDropdown,
+        'text_input': text_input,
+        'input_tbv': input_tbv,
+        'bends_tbv': bends_tbv,
+        'inlets_tbv': inlets_tbv,
+        'exits_tbv': exits_tbv,
+        'gradContraction_tbv': gradContraction_tbv,
+        'submit_button': submit_button
+}
 
     return render(request, 'storage_capacity/home.html', context)
 
