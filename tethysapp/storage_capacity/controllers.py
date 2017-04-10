@@ -168,6 +168,68 @@ def resultspage(request):
 		}]
 
 		)
+	
+	if request.POST and 'submit' in request.POST:
+		session=SessionMaker()
+
+		capacityList=[]
+
+		for row in paired_lists:
+			flow=row.flow
+
+			pipeMaterial=float(request.POST['materialDropdown'])
+			length = float(request.POST['valueInput0'])
+			diameter = float(request.POST['valueInput1'])
+			elevHead = float(request.POST['valueInput2'])
+
+			density = 998
+			kinViscosity = 0.00000112
+			turbineEfficiency = 0.53
+			gravity = 9.81
+			RDRatio = pipeMaterial / diameter
+			XSArea = pi * (diameter/2.0)**2
+			aveVelocity = flow/XSArea
+			reynolsN = (aveVelocity * diameter) / kinViscosity
+			flowType = 'Laminar' if reynolsN < 2000 else 'Turbulent'
+			massFR = density * flow
+			frictionFactor = 64 / reynolsN if flowType == 'Laminar' else (1 / (-1.8 * log10((RDRatio / 3.7)**1.11 + (6.9 / reynolsN))))**2
+
+			smooth90F = 0.3 * float(request.POST['BCountInput0'])
+			smooth90T = 0.9 * float(request.POST['BCountInput1'])
+			miter90 = 1.1 * float(request.POST['BCountInput2'])
+			elbow45T = 0.4 * float(request.POST['BCountInput3'])
+			unionT = 0.08 * float(request.POST['BCountInput4'])
+
+			reentrant = 0.8 * float(request.POST['ICountInput0'])
+			sharpeEdge = 0.5 * float(request.POST['ICountInput1'])
+			wellRounded = 0.03 * float(request.POST['ICountInput2'])
+			slightlyRounded = 0.12 * float(request.POST['ICountInput3'])
+
+			reentrantT = 1.05 * float(request.POST['ECountInput0'])
+			sharpeEdgeT = 1.05 * float(request.POST['ECountInput1'])
+			roundedT = 1.05 * float(request.POST['ECountInput2'])
+
+			degree30 = 0.02 * float(request.POST['GCountInput0'])
+			degree45 = 0.04 * float(request.POST['GCountInput1'])
+			degree60 = 0.07 * float(request.POST['GCountInput2'])
+
+			totalK = smooth90F + smooth90T + miter90 + elbow45T + unionT + reentrant + sharpeEdge + wellRounded +\
+			slightlyRounded + reentrantT + sharpeEdgeT + roundedT + degree30 + degree45 + degree60
+
+			minorLosses = totalK * (aveVelocity**2 / (2 * gravity))
+			frictionLoss = (frictionFactor * length * aveVelocity**2) / (diameter * 2 * gravity)
+
+			totalHeadLoss = minorLosses + frictionLoss
+			turbineHead = elevHead - totalHeadLoss
+
+			capacity = (turbineHead * density * flow * turbineEfficiency * gravity) / 1000
+			apacityList.append((int(row.percent), round(float(flow), 2), round(float(capacity), 2)))
+		sortedCapList=sorted(capacityList, key=lambda x:x[0])
+
+
+
+
+
 
 
 
